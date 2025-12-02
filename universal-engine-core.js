@@ -1,91 +1,90 @@
-/** 
- * UNIVERSAL LOTTO ENGINE CORE v1.0
- * Designed for CDN delivery 
- * Author: John & Joan (Lotto Number Lab)
- */
+/* -----------------------------------------------------
+ UNIVERSAL LOTTO ENGINE CORE (v4.3 — Slip Edition)
+ Author: Joan Ellis
+------------------------------------------------------ */
 
-class UniversalLottoEngine {
-    constructor(config) {
-        this.min = config.min;
-        this.max = config.max;
-        this.count = config.count;
+window.LottoCore = {
+    config: {
+        mainMax: 0,
+        mainPick: 0,
+        bonusMax: 0,
+        bonusPick: 0
+    },
 
-        this.bonusMin = config.bonusMin ?? null;
-        this.bonusMax = config.bonusMax ?? null;
-        this.bonusCount = config.bonusCount ?? 0;
+    state: {
+        main: [],
+        bonus: []
+    },
 
-        this.selectedNumbers = [];
-        this.bonusNumbers = [];
+    /* ------------------------------
+       Initialize Configuration
+    ------------------------------ */
+    setConfig(cfg) {
+        this.config = { ...cfg };
+        this.reset();
+    },
 
-        this.onUpdate = config.onUpdate || function () {};
-        this.onComplete = config.onComplete || function () {};
-    }
-
-    // 번호 1개 랜덤 생성
-    randomNumber(min, max) {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
-
-    // 중복 없이 번호 세트 랜덤 생성
-    generateRandomSet(min, max, count) {
-        let nums = new Set();
-        while (nums.size < count) {
-            nums.add(this.randomNumber(min, max));
-        }
-        return Array.from(nums).sort((a, b) => a - b);
-    }
-
-    // 전체 자동 생성
-    autoPick() {
-        this.selectedNumbers = this.generateRandomSet(this.min, this.max, this.count);
-
-        if (this.bonusCount > 0) {
-            this.bonusNumbers = this.generateRandomSet(this.bonusMin, this.bonusMax, this.bonusCount);
-        }
-
-        this.onUpdate(this.selectedNumbers, this.bonusNumbers);
-        this.onComplete("AUTO");
-    }
-
-    // 수동 선택
-    toggleNumber(num) {
-        if (this.selectedNumbers.includes(num)) {
-            this.selectedNumbers = this.selectedNumbers.filter(n => n !== num);
-        } else {
-            if (this.selectedNumbers.length < this.count) {
-                this.selectedNumbers.push(num);
-            }
-        }
-
-        this.selectedNumbers.sort((a, b) => a - b);
-        this.onUpdate(this.selectedNumbers, this.bonusNumbers);
-
-        if (this.selectedNumbers.length === this.count) {
-            this.onComplete("MANUAL");
-        }
-    }
-
-    // 보너스 수동 선택 (파워볼, 일본 로또 등)
-    toggleBonus(num) {
-        if (this.bonusNumbers.includes(num)) {
-            this.bonusNumbers = this.bonusNumbers.filter(n => n !== num);
-        } else {
-            if (this.bonusNumbers.length < this.bonusCount) {
-                this.bonusNumbers.push(num);
-            }
-        }
-
-        this.bonusNumbers.sort((a, b) => a - b);
-        this.onUpdate(this.selectedNumbers, this.bonusNumbers);
-    }
-
-    // 초기화
+    /* ------------------------------
+       Reset All Selected Numbers
+    ------------------------------ */
     reset() {
-        this.selectedNumbers = [];
-        this.bonusNumbers = [];
-        this.onUpdate(this.selectedNumbers, this.bonusNumbers);
-    }
-}
+        this.state.main = [];
+        this.state.bonus = [];
+    },
 
-// CDN export
-window.UniversalLottoEngine = UniversalLottoEngine;
+    /* ------------------------------
+       Auto Pick Random Numbers
+    ------------------------------ */
+    autoPick() {
+        let mainSet = new Set();
+        let bonusSet = new Set();
+
+        while (mainSet.size < this.config.mainPick) {
+            mainSet.add(Math.floor(Math.random() * this.config.mainMax) + 1);
+        }
+
+        if (this.config.bonusPick > 0) {
+            while (bonusSet.size < this.config.bonusPick) {
+                bonusSet.add(Math.floor(Math.random() * this.config.bonusMax) + 1);
+            }
+        }
+
+        this.state.main = Array.from(mainSet).sort((a, b) => a - b);
+        this.state.bonus = Array.from(bonusSet).sort((a, b) => a - b);
+    },
+
+    /* ------------------------------
+       Toggle Manual Selection
+    ------------------------------ */
+    toggleMain(num) {
+        if (this.state.main.includes(num)) {
+            this.state.main = this.state.main.filter(n => n !== num);
+        } else {
+            if (this.state.main.length < this.config.mainPick) {
+                this.state.main.push(num);
+            }
+        }
+        this.state.main.sort((a, b) => a - b);
+    },
+
+    toggleBonus(num) {
+        if (this.state.bonus.includes(num)) {
+            this.state.bonus = this.state.bonus.filter(n => n !== num);
+        } else {
+            if (this.state.bonus.length < this.config.bonusPick) {
+                this.state.bonus.push(num);
+            }
+        }
+        this.state.bonus.sort((a, b) => a - b);
+    },
+
+    /* ------------------------------
+       Selection Complete Check
+    ------------------------------ */
+    isComplete() {
+        return (
+            this.state.main.length === this.config.mainPick &&
+            this.state.bonus.length === this.config.bonusPick
+        );
+    }
+};
