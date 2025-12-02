@@ -1,60 +1,137 @@
-/**
- * MEGA MILLIONS ENGINE v1.0 (CDN Version)
- * Works with Universal Lotto Engine Core
- * Author: John & Joan
- */
+/* -----------------------------------------------------
+ MEGA MILLIONS — Slip Edition Interface (v4.3 Final)
+ Author: Joan Ellis
+------------------------------------------------------ */
 
 (function () {
 
-    // Mega Millions Config
-    const config = {
-        min: 1,
-        max: 70,
-        count: 5,
-        bonusMin: 1,
-        bonusMax: 25,
-        bonusCount: 1,
+    /* -----------------------------------------------------
+       1. Lotto Configuration (for Mega Millions)
+    ------------------------------------------------------ */
+    window.LottoCore.setConfig({
+        mainMax: 70,   // 1–70
+        mainPick: 5,   // pick 5
+        bonusMax: 25,  // 1–25 (Mega Ball)
+        bonusPick: 1
+    });
 
-        // UI 업데이트 핸들러
-        onUpdate: function (main, bonus) {
-            const mainBox = document.getElementById("lottoSelectedMain");
-            const bonusBox = document.getElementById("lottoSelectedBonus");
+    /* -----------------------------------------------------
+       2. UI Build Function — Auto Generates All Number Bubbles
+    ------------------------------------------------------ */
+    function buildBoard() {
 
-            if (mainBox) mainBox.innerHTML = main.join(", ");
-            if (bonusBox) bonusBox.innerHTML = bonus.join(", ");
-        },
+        const mainBoard = document.getElementById("main-board");
+        const bonusBoard = document.getElementById("bonus-board");
 
-        // 선택 완료 후 처리
-        onComplete: function (mode) {
-            console.log("Mega Millions selection complete:", mode);
+        mainBoard.innerHTML = "";
+        bonusBoard.innerHTML = "";
+
+        // Main Numbers
+        for (let i = 1; i <= 70; i++) {
+            const b = document.createElement("div");
+            b.className = "bubble num";
+            b.textContent = i;
+            b.dataset.val = i;
+            b.onclick = () => {
+                window.LottoCore.toggleMain(i);
+                updateUI();
+            };
+            mainBoard.appendChild(b);
+        }
+
+        // Bonus Numbers
+        for (let j = 1; j <= 25; j++) {
+            const b = document.createElement("div");
+            b.className = "bubble bonus";
+            b.textContent = j;
+            b.dataset.val = j;
+            b.onclick = () => {
+                window.LottoCore.toggleBonus(j);
+                updateUI();
+            };
+            bonusBoard.appendChild(b);
+        }
+    }
+
+    /* -----------------------------------------------------
+       3. Update UI (refresh all selections)
+    ------------------------------------------------------ */
+    function updateUI() {
+
+        // Main numbers
+        document.querySelectorAll(".num").forEach(el => {
+            const num = parseInt(el.dataset.val);
+            if (window.LottoCore.state.main.includes(num)) {
+                el.classList.add("selected");
+            } else {
+                el.classList.remove("selected");
+            }
+        });
+
+        // Bonus numbers
+        document.querySelectorAll(".bonus").forEach(el => {
+            const num = parseInt(el.dataset.val);
+            if (window.LottoCore.state.bonus.includes(num)) {
+                el.classList.add("selected");
+            } else {
+                el.classList.remove("selected");
+            }
+        });
+
+        // Selected Numbers Output
+        document.getElementById("selected-main").textContent =
+            window.LottoCore.state.main.join(", ") || "…";
+        document.getElementById("selected-bonus").textContent =
+            window.LottoCore.state.bonus.join(", ") || "…";
+
+        // Activate Generate Button
+        const genBtn = document.getElementById("btn-generate");
+        genBtn.disabled = !window.LottoCore.isComplete();
+    }
+
+    /* -----------------------------------------------------
+       4. Control Buttons
+    ------------------------------------------------------ */
+
+    // Auto Pick
+    document.getElementById("btn-auto").onclick = () => {
+        window.LottoCore.reset();
+        window.LottoCore.autoPick();
+        updateUI();
+        showBlessing();
+    };
+
+    // Manual Reset
+    document.getElementById("btn-reset").onclick = () => {
+        window.LottoCore.reset();
+        updateUI();
+    };
+
+    // Generate Ticket (after manual completion)
+    document.getElementById("btn-generate").onclick = () => {
+        if (window.LottoCore.isComplete()) {
+            showBlessing();
         }
     };
 
-    // 엔진 생성
-    window.MegaMillionsEngine = new UniversalLottoEngine(config);
+    /* -----------------------------------------------------
+       5. God Blessing Popup
+    ------------------------------------------------------ */
+    function showBlessing() {
+        const pop = document.getElementById("popup-blessing");
+        pop.style.display = "flex";
+    }
 
-    // Auto Pick
-    window.autoPickLotto = function () {
-        window.MegaMillionsEngine.autoPick();
+    document.getElementById("popup-close").onclick = () => {
+        document.getElementById("popup-blessing").style.display = "none";
     };
 
-    // Manual Mode UI
-    window.enableManualMode = function () {
-        alert("Manual pick mode enabled.\nScroll down and click numbers to select.");
-    };
-
-    // 숫자 선택(번호판 클릭 시)
-    window.pickMain = function (num) {
-        window.MegaMillionsEngine.toggleNumber(num);
-    };
-
-    window.pickBonus = function (num) {
-        window.MegaMillionsEngine.toggleBonus(num);
-    };
-
-    // 리셋
-    window.resetLotto = function () {
-        window.MegaMillionsEngine.reset();
-    };
+    /* -----------------------------------------------------
+       6. Initialize UI on Page Load
+    ------------------------------------------------------ */
+    window.addEventListener("DOMContentLoaded", () => {
+        buildBoard();
+        updateUI();
+    });
 
 })();
